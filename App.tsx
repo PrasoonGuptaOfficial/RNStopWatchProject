@@ -1,117 +1,76 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import React, {useEffect, useRef, useState} from 'react';
+import {SafeAreaView, StatusBar, StyleSheet} from 'react-native';
+import {Colors} from './src/constants/Colors';
+import TimerButton from './src/components/TimerButton';
+import {AppStrings} from './src/constants/AppString';
+import TimerText from './src/components/TimerText';
 
 function App(): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
+  const [timerText, setTimerText] = useState({hr: 0, min: 0, sec: 0});
+  const [displayTimerButton, setDisplayTimerButton] = useState(false);
+  let timeId: any = useRef();
+  function onHandleTime() {
+    setDisplayTimerButton(true);
+    timeId.current = setInterval(() => {
+      setTimerText(previousValue => {
+        if (previousValue.sec === 60) {
+          return {...previousValue, min: previousValue.min + 1, sec: 0};
+        }
+        if (previousValue.min === 60) {
+          return {...previousValue, hr: previousValue.hr + 1, min: 0, sec: 0};
+        }
+        let newState = {...previousValue, sec: previousValue.sec + 1};
+        return newState;
+      });
+    }, 100);
+  }
+  function onHandleStopTime() {
+    setDisplayTimerButton(false);
+    clearInterval(timeId.current);
+  }
+  function onHandleResetTime() {
+    setDisplayTimerButton(false);
+    clearInterval(timeId.current);
+    setTimerText({hr: 0, min: 0, sec: 0});
+  }
+  useEffect(() => {
+    return () => clearInterval(timeId.current);
+  }, []);
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <SafeAreaView style={styles.screen}>
+      <StatusBar barStyle={'light-content'} />
+      <TimerText
+        timerTextHr={timerText.hr}
+        timerTextMin={timerText.min}
+        timerTextSec={timerText.sec}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      {displayTimerButton ? (
+        <TimerButton
+          buttonText={AppStrings.Stop}
+          buttonPressed={() => onHandleStopTime()}
+        />
+      ) : (
+        <TimerButton
+          buttonText={AppStrings.Start}
+          buttonPressed={() => onHandleTime()}
+        />
+      )}
+      {(timerText.hr !== 0 || timerText.min !== 0 || timerText.sec !== 0) && (
+        <TimerButton
+          buttonText={AppStrings.Reset}
+          buttonPressed={() => onHandleResetTime()}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.mainScreenColor,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
